@@ -8,8 +8,8 @@ import (
 )
 
 type WatchJob struct {
-	Checker   domain.InscriptionChecker
-	Notifier  domain.Notifier
+	Checker   domain.MonitorInscricao
+	Notifier  domain.Notificar
 	Triggered bool
 }
 
