@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/feaoki/sao-silvestre-watcher/internal/domain"
 )
 
 type Response struct {
@@ -19,15 +21,23 @@ type Response struct {
 	} `json:"candidates"`
 }
 
-func Check() {
-	credFile := "../.credenciais/credenciais.json"
+type GenAI struct{}
+
+func NewGenAIChecker() domain.CheckSaoSilvestre {
+	return &GenAI{}
+}
+
+func (g *GenAI) Checker() (bool, error) {
+	credFile := ".credenciais/credenciais.json"
 	credData, err := os.ReadFile(credFile)
 	if err != nil {
-		panic(fmt.Sprintf("Erro ao ler o arquivo de credenciais: %v", err))
+		fmt.Println("Erro ao ler o arquivo de credenciais:", err)
+		return false, fmt.Errorf("erro ao ler o arquivo de credenciais: %v", err)
 	}
 	var creds map[string]map[string]string
 	if err := json.Unmarshal(credData, &creds); err != nil {
-		panic(fmt.Sprintf("Erro ao fazer unmarshal das credenciais: %v", err))
+		fmt.Println("Erro ao fazer unmarshal das credenciais:", err)
+		return false, fmt.Errorf("erro ao processar as credenciais: %v", err)
 	}
 	apiKey := creds["desafio05"]["api"]
 
@@ -51,7 +61,8 @@ func Check() {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		fmt.Println("Erro ao fazer a requisição:", err)
+		return false, fmt.Errorf("erro ao fazer a requisição para a API: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -59,12 +70,14 @@ func Check() {
 	// fmt.Println(string(respData))
 	var response Response
 	if err := json.Unmarshal(respData, &response); err != nil {
-		panic(fmt.Sprintf("Erro ao fazer unmarshal da resposta: %v", err))
+		fmt.Printf("Erro ao fazer unmarshal da resposta: %v", err)
+		return false, fmt.Errorf("erro ao processar a resposta da API: %v", err)
 	}
 	inscricoesAbertas := false
 	if response.Candidates[0].Content.Parts[0].Text == "SIM" {
 		inscricoesAbertas = true
 	}
 	fmt.Println("Inscrições abertas:", inscricoesAbertas)
+	return inscricoesAbertas, nil
 
 }
